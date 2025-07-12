@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReWear - Community Clothing Exchange</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">ReWear</div>
+        <div class="nav-links">
+            <a href="#" class="nav-link" data-page="home">Home</a>
+            <a href="#" class="nav-link" data-page="browse">Browse Items</a>
+            <a href="#" class="nav-link" data-page="dashboard" id="dashboard-link" style="display: none;">Dashboard</a>
+            <a href="#" class="nav-link" data-page="add-item" id="add-item-link" style="display: none;">List Item</a>
+            <a href="#" class="nav-link" data-page="admin" id="admin-link" style="display: none;">Admin</a>
+            <a href="#" class="nav-link" id="auth-link" data-page="login">Login</a>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <div id="home-page" class="page active">
+        <div class="hero">
+            <h1>Welcome to ReWear</h1>
+            <p>Exchange unused clothing through direct swaps or point-based redemption</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="showPage('browse')">Start Swapping</button>
+                <button class="btn btn-secondary" onclick="showPage('browse')">Browse Items</button>
+                <button class="btn btn-secondary" onclick="showPage('add-item')">List an Item</button>
+            </div>
+        </div>
+        
+        <div class="featured-items">
+            <h2>Featured Items</h2>
+            <div id="featured-carousel" class="carousel">
+                <!-- Featured items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Login/Register Page -->
+    <div id="login-page" class="page">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Login</button>
+                <button class="tab-btn" data-tab="register">Register</button>
+            </div>
+            
+            <div id="login-form" class="auth-form active">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <input type="email" placeholder="Email" id="login-email" required>
+                    <input type="password" placeholder="Password" id="login-password" required>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+            </div>
+            
+            <div id="register-form" class="auth-form">
+                <h2>Register</h2>
+                <form id="registerForm">
+                    <input type="text" placeholder="Name" id="register-name" required>
+                    <input type="email" placeholder="Email" id="register-email" required>
+                    <input type="password" placeholder="Password" id="register-password" required>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Browse Items Page -->
+    <div id="browse-page" class="page">
+        <div class="browse-header">
+            <h1>Browse Items</h1>
+            <div class="filters">
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                    <option value="shirts">Shirts</option>
+                    <option value="pants">Pants</option>
+                    <option value="dresses">Dresses</option>
+                    <option value="shoes">Shoes</option>
+                    <option value="accessories">Accessories</option>
+                </select>
+                <select id="size-filter">
+                    <option value="">All Sizes</option>
+                    <option value="XS">XS</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                </select>
+            </div>
+        </div>
+        <div id="items-grid" class="items-grid">
+            <!-- Items will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Item Detail Page -->
+    <div id="item-detail-page" class="page">
+        <div class="item-detail-container">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <div id="item-detail-content">
+                <!-- Item details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="page">
+        <div class="dashboard-container">
+            <h1>My Dashboard</h1>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>Profile</h3>
+                    <div id="profile-info">
+                        <!-- Profile info will be loaded here -->
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h3>My Items</h3>
+                    <div id="my-items">
+                        <!-- User's items will be loaded here -->
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Swap History</h3>
+                    <div id="swap-history">
+                        <!-- Swap history will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Page -->
+    <div id="add-item-page" class="page">
+        <div class="add-item-container">
+            <h1>List a New Item</h1>
+            <form id="add-item-form" class="add-item-form">
+                <div class="form-group">
+                    <label for="item-title">Title</label>
+                    <input type="text" id="item-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-description">Description</label>
+                    <textarea id="item-description" required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="item-category">Category</label>
+                        <select id="item-category" required>
+                            <option value="">Select Category</option>
+                            <option value="shirts">Shirts</option>
+                            <option value="pants">Pants</option>
+                            <option value="dresses">Dresses</option>
+                            <option value="shoes">Shoes</option>
+                            <option value="accessories">Accessories</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-type">Type</label>
+                        <select id="item-type" required>
+                            <option value="">Select Type</option>
+                            <option value="casual">Casual</option>
+                            <option value="formal">Formal</option>
+                            <option value="sportswear">Sportswear</option>
+                            <option value="vintage">Vintage</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="item-size">Size</label>
+                        <select id="item-size" required>
+                            <option value="">Select Size</option>
+                            <option value="XS">XS</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-condition">Condition</label>
+                        <select id="item-condition" required>
+                            <option value="">Select Condition</option>
+                            <option value="new">New</option>
+                            <option value="like-new">Like New</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="item-tags">Tags (comma separated)</label>
+                    <input type="text" id="item-tags" placeholder="casual, cotton, summer">
+                </div>
+                <div class="form-group">
+                    <label for="item-images">Images</label>
+                    <input type="file" id="item-images" accept="image/*" multiple>
+                    <div id="image-preview" class="image-preview"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">List Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="admin-page" class="page">
+        <div class="admin-container">
+            <h1>Admin Panel</h1>
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" data-tab="pending">Pending Items</button>
+                <button class="admin-tab-btn" data-tab="users">Users</button>
+            </div>
+            
+            <div id="pending-items-tab" class="admin-tab active">
+                <h2>Pending Items for Approval</h2>
+                <div id="pending-items-list">
+                    <!-- Pending items will be loaded here -->
+                </div>
+            </div>
+            
+            <div id="users-tab" class="admin-tab">
+                <h2>All Users</h2>
+                <div id="users-list">
+                    <!-- Users will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

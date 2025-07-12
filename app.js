@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cloudinary from 'cloudinary';
+import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import itemRoutes from './routes/itemRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -25,6 +26,14 @@ cloudinary.v2.config({
 });
 
 const app = express();
+
+// ✅ CORS middleware
+app.use(cors({
+  origin: ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // ✅ Middleware
 app.use(express.json({ limit: '10mb' }));
