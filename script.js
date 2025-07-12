@@ -21,6 +21,52 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     checkAuthStatus();
+    // Connect to Socket.IO
+    socket = io('http://localhost:5000');
+    socket.on('item:new', () => {
+        console.log('[Socket.IO] Received item:new event');
+        if (currentPage === 'browse' || currentPage === 'home') {
+            console.log('[Socket.IO] Calling loadItems() for item:new');
+            loadItems();
+        }
+    });
+    socket.on('swap:requested', ({ itemId }) => {
+        console.log('[Socket.IO] Received swap:requested event for item', itemId);
+        if (currentPage === 'item-detail') {
+            console.log('[Socket.IO] Calling showItemDetail() for swap:requested');
+            showItemDetail(itemId);
+        }
+        if (currentPage === 'dashboard') {
+            console.log('[Socket.IO] Calling loadDashboard() for swap:requested');
+            loadDashboard();
+        }
+        if (currentPage === 'browse' || currentPage === 'home') {
+            console.log('[Socket.IO] Calling loadItems() for swap:requested');
+            loadItems();
+        }
+    });
+    socket.on('swap:decision', ({ itemId }) => {
+        console.log('[Socket.IO] Received swap:decision event for item', itemId);
+        if (currentPage === 'item-detail') {
+            console.log('[Socket.IO] Calling showItemDetail() for swap:decision');
+            showItemDetail(itemId);
+        }
+        if (currentPage === 'browse' || currentPage === 'home') {
+            console.log('[Socket.IO] Calling loadItems() for swap:decision');
+            loadItems();
+        }
+    });
+    socket.on('item:redeemed', ({ itemId }) => {
+        console.log('[Socket.IO] Received item:redeemed event for item', itemId);
+        if (currentPage === 'item-detail') {
+            console.log('[Socket.IO] Calling showItemDetail() for item:redeemed');
+            showItemDetail(itemId);
+        }
+        if (currentPage === 'browse' || currentPage === 'home') {
+            console.log('[Socket.IO] Calling loadItems() for item:redeemed');
+            loadItems();
+        }
+    });
 });
 
 function initializeApp() {
@@ -147,6 +193,14 @@ function updateAuthUI(isLoggedIn) {
         dashboardLink.style.display = 'inline-block';
         addItemLink.style.display = 'inline-block';
         
+        // Show points display
+        const pointsDisplay = document.getElementById('points-display');
+        const userPointsNav = document.getElementById('user-points-nav');
+        if (pointsDisplay && userPointsNav) {
+            pointsDisplay.style.display = 'inline-block';
+            userPointsNav.textContent = currentUser.points || 0;
+        }
+        
         if (currentUser.role === 'admin') {
             adminLink.style.display = 'inline-block';
         }
@@ -156,6 +210,13 @@ function updateAuthUI(isLoggedIn) {
         dashboardLink.style.display = 'none';
         addItemLink.style.display = 'none';
         adminLink.style.display = 'none';
+        
+        // Hide points display
+        const pointsDisplay = document.getElementById('points-display');
+        if (pointsDisplay) {
+            pointsDisplay.style.display = 'none';
+        }
+        
         currentUser = null;
     }
 }
@@ -254,7 +315,8 @@ async function loadItems() {
     try {
         const response = await fetch(`${API_BASE}/items`);
         if (response.ok) {
-            items = await response.json();
+            const data = await response.json();
+            items = data.items || data; // Handle both object with items property and direct array
             displayItems(items);
         }
     } catch (error) {
@@ -267,7 +329,8 @@ async function loadFeaturedItems() {
     try {
         const response = await fetch(`${API_BASE}/items`);
         if (response.ok) {
-            const allItems = await response.json();
+            const data = await response.json();
+            const allItems = data.items || data; // Handle both object with items property and direct array
             const featured = allItems.slice(0, 5); // Show first 5 items as featured
             displayFeaturedItems(featured);
         }
@@ -339,7 +402,54 @@ async function showItemDetail(itemId) {
 
 function displayItemDetail(item) {
     const container = document.getElementById('item-detail-content');
+    const isOwner = currentUser && item.listedBy && (item.listedBy._id === currentUser._id || item.listedBy === currentUser._id);
+    let swapRequestsSection = '';
     
+    if (isOwner && item.swapRequests && item.swapRequests.length > 0) {
+        const pendingRequests = item.swapRequests.filter(req => req.status === 'pending');
+        const otherRequests = item.swapRequests.filter(req => req.status !== 'pending');
+        
+        swapRequestsSection = `
+            <div class="swap-requests">
+                <h4>Swap Requests (${item.swapRequests.length})</h4>
+                ${pendingRequests.length > 0 ? `
+                    <div class="pending-requests">
+                        <h5>Pending Requests (${pendingRequests.length})</h5>
+                        <ul>
+                            ${pendingRequests.map((req, idx) => `
+                                <li class="swap-request-item pending">
+                                    <div class="request-info">
+                                        <span class="user-name">${req.user?.name || 'Unknown User'}</span>
+                                        <span class="request-date">${new Date(req.requestedAt || Date.now()).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="request-actions">
+                                        <button class="btn btn-approve" onclick="handleSwapDecision('${item._id}', '${req.user?._id || req.user}', 'accept')">Accept</button>
+                                        <button class="btn btn-reject" onclick="handleSwapDecision('${item._id}', '${req.user?._id || req.user}', 'reject')">Reject</button>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${otherRequests.length > 0 ? `
+                    <div class="other-requests">
+                        <h5>Other Requests</h5>
+                        <ul>
+                            ${otherRequests.map((req, idx) => `
+                                <li class="swap-request-item ${req.status}">
+                                    <div class="request-info">
+                                        <span class="user-name">${req.user?.name || 'Unknown User'}</span>
+                                        <span class="status">${req.status}</span>
+                                        <span class="request-date">${new Date(req.requestedAt || Date.now()).toLocaleDateString()}</span>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
     container.innerHTML = `
         <div class="item-detail-grid">
             <div class="item-detail-images">
@@ -359,9 +469,13 @@ function displayItemDetail(item) {
                 ${item.tags && item.tags.length > 0 ? 
                     `<p><strong>Tags:</strong> ${item.tags.join(', ')}</p>` : ''
                 }
+                <p><strong>Status:</strong> ${item.availability}</p>
+                ${swapRequestsSection}
                 <div class="item-actions">
-                    <button class="btn btn-primary" onclick="requestSwap('${item._id}')">Request Swap</button>
-                    <button class="btn btn-secondary" onclick="redeemWithPoints('${item._id}')">Redeem with Points</button>
+                    ${!isOwner && item.availability === 'available' ? `
+                        <button class="btn btn-primary" onclick="requestSwap('${item._id}')">Request Swap</button>
+                        <button class="btn btn-secondary" onclick="redeemWithPoints('${item._id}')">Redeem with Points</button>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -432,12 +546,14 @@ async function loadDashboard() {
     }
 }
 
+// Update dashboard profile info to show points
 function displayProfileInfo(profile) {
     const container = document.getElementById('profile-info');
     container.innerHTML = `
         <p><strong>Name:</strong> ${profile.name}</p>
         <p><strong>Email:</strong> ${profile.email}</p>
         <p><strong>Role:</strong> ${profile.role}</p>
+        <p><strong>Points:</strong> <span id="user-points">${profile.points ?? 0}</span></p>
         <p><strong>Member since:</strong> ${new Date(profile.createdAt).toLocaleDateString()}</p>
     `;
 }
@@ -454,6 +570,16 @@ function displayMyItems(myItems) {
         <div class="item-card" onclick="showItemDetail('${item._id}')">
             <img src="${item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/300x200?text=No+Image'}" 
                  alt="${item.title}" class="item-image">
+            <button class="delete-item-btn" title="Delete item" onclick="event.stopPropagation(); handleDeleteItem('${item._id}')">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="5" y="8" width="1.5" height="6" rx="0.75" fill="#ff4757"/>
+                  <rect x="9.25" y="8" width="1.5" height="6" rx="0.75" fill="#ff4757"/>
+                  <rect x="13" y="8" width="1.5" height="6" rx="0.75" fill="#ff4757"/>
+                  <rect x="4" y="5" width="12" height="2" rx="1" fill="#222"/>
+                  <rect x="7" y="2" width="6" height="2" rx="1" fill="#222"/>
+                  <rect x="2" y="7" width="16" height="1.5" rx="0.75" fill="#ff4757"/>
+                </svg>
+            </button>
             <div class="item-info">
                 <div class="item-title">${item.title}</div>
                 <div class="item-category">${item.category}</div>
@@ -462,6 +588,27 @@ function displayMyItems(myItems) {
             </div>
         </div>
     `).join('');
+}
+
+async function handleDeleteItem(itemId) {
+    if (!confirm('Are you sure you want to delete this item? This cannot be undone.')) return;
+    try {
+        const response = await fetch(`${API_BASE}/items/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showSuccess(data.message || 'Item deleted successfully.');
+            loadDashboard();
+        } else {
+            showError(data.message || 'Failed to delete item.');
+        }
+    } catch (error) {
+        showError('Failed to delete item.');
+    }
 }
 
 function displaySwapHistory(swaps) {
@@ -708,11 +855,93 @@ function handleLogout() {
     showSuccess('Logged out successfully');
 }
 
-// Placeholder functions for future features
-function requestSwap(itemId) {
-    showError('Swap request feature coming soon!');
+// Replace placeholder swap/points functions with real implementations
+async function requestSwap(itemId) {
+    if (!currentUser) {
+        showError('Please login to request a swap.');
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE}/items/${itemId}/request-swap`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showSuccess(data.message || 'Swap request sent!');
+        } else {
+            showError(data.message || 'Failed to request swap.');
+        }
+    } catch (error) {
+        showError('Failed to request swap.');
+    }
 }
 
-function redeemWithPoints(itemId) {
-    showError('Point redemption feature coming soon!');
+async function redeemWithPoints(itemId) {
+    if (!currentUser) {
+        showError('Please login to redeem with points.');
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE}/items/${itemId}/redeem`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showSuccess(data.message || 'Item redeemed with points!');
+            // Update points display
+            const userPointsNav = document.getElementById('user-points-nav');
+            if (userPointsNav && currentUser) {
+                currentUser.points = Math.max(0, (currentUser.points || 0) - 30);
+                userPointsNav.textContent = currentUser.points;
+            }
+            // Optionally refresh dashboard/profile to update points
+            if (currentPage === 'dashboard') loadDashboard();
+        } else {
+            showError(data.message || 'Failed to redeem item.');
+        }
+    } catch (error) {
+        showError('Failed to redeem item.');
+    }
+} 
+
+// Accept/reject swap decision
+async function handleSwapDecision(itemId, userId, decision) {
+    if (!currentUser) {
+        showError('Please login.');
+        return;
+    }
+    try {
+        const response = await fetch(`${API_BASE}/items/${itemId}/swap-decision`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId, decision })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            if (decision === 'accept') {
+                showSuccess('Swap successful! The item has been swapped.');
+            } else {
+                showSuccess(data.message || 'Swap request rejected.');
+            }
+            // Refresh item detail
+            showItemDetail(itemId);
+            // Also refresh dashboard if on dashboard
+            if (currentPage === 'dashboard') {
+                loadDashboard();
+            }
+        } else {
+            showError(data.message || 'Failed to update swap decision.');
+        }
+    } catch (error) {
+        showError('Failed to update swap decision.');
+    }
 } 

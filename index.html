@@ -4,41 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReWear - Community Clothing Exchange</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
+    <!-- Header / Navigation -->
+    <header class="navbar">
         <div class="nav-brand">ReWear</div>
-        <div class="nav-links">
+        <nav class="nav-links">
             <a href="#" class="nav-link" data-page="home">Home</a>
-            <a href="#" class="nav-link" data-page="browse">Browse Items</a>
+            <a href="#" class="nav-link" data-page="browse">Browse</a>
             <a href="#" class="nav-link" data-page="dashboard" id="dashboard-link" style="display: none;">Dashboard</a>
             <a href="#" class="nav-link" data-page="add-item" id="add-item-link" style="display: none;">List Item</a>
             <a href="#" class="nav-link" data-page="admin" id="admin-link" style="display: none;">Admin</a>
+            <span id="points-display" class="nav-link" style="display: none; color: #ffd700; font-weight: bold;">Points: <span id="user-points-nav">0</span></span>
             <a href="#" class="nav-link" id="auth-link" data-page="login">Login</a>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
-    <!-- Home Page -->
-    <div id="home-page" class="page active">
-        <div class="hero">
-            <h1>Welcome to ReWear</h1>
-            <p>Exchange unused clothing through direct swaps or point-based redemption</p>
-            <div class="hero-buttons">
-                <button class="btn btn-primary" onclick="showPage('browse')">Start Swapping</button>
-                <button class="btn btn-secondary" onclick="showPage('browse')">Browse Items</button>
-                <button class="btn btn-secondary" onclick="showPage('add-item')">List an Item</button>
+    <!-- Landing Page -->
+    <main id="home-page" class="page active">
+        <section class="hero">
+            <div class="hero-content">
+                <h1>ReWear</h1>
+                <p>Exchange unused clothing through direct swaps or a point-based system. Join the movement for sustainable fashion!</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="showPage('browse')">Start Swapping</button>
+                    <button class="btn btn-secondary" onclick="showPage('browse')">Browse Items</button>
+                    <button class="btn btn-secondary" onclick="showPage('add-item')">List an Item</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="featured-items">
-            <h2>Featured Items</h2>
-            <div id="featured-carousel" class="carousel">
-                <!-- Featured items will be loaded here -->
+            <div class="hero-image">
+                <!-- Optionally add a hero illustration or carousel here -->
+                <div id="featured-carousel" class="carousel"></div>
             </div>
-        </div>
-    </div>
+        </section>
+
+        <section class="categories-section">
+            <h2>Categories</h2>
+            <div class="categories-grid">
+                <div class="category-card">Shirts</div>
+                <div class="category-card">Pants</div>
+                <div class="category-card">Dresses</div>
+                <div class="category-card">Shoes</div>
+                <div class="category-card">Accessories</div>
+                <div class="category-card">Outerwear</div>
+            </div>
+        </section>
+
+        <section class="product-listings">
+            <h2>Product Listings</h2>
+            <div id="items-grid" class="items-grid"></div>
+        </section>
+
+        <section class="testimonials-section">
+            <h2>What Our Users Say</h2>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">"I love swapping on ReWear!"</div>
+                <div class="testimonial-card">"Great way to refresh my wardrobe sustainably."</div>
+                <div class="testimonial-card">"Easy, fun, and eco-friendly!"</div>
+            </div>
+        </section>
+    </main>
 
     <!-- Login/Register Page -->
     <div id="login-page" class="page">
@@ -232,6 +261,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 

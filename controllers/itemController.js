@@ -1,5 +1,7 @@
 import Item from '../models/Item.js';
+import User from '../models/User.js';
 import cloudinary from '../utils/cloudinary.js';
+import { io } from '../server.js';
 
 // @desc   Get all products (with pagination & optional search)
 // @route  GET /api/products
@@ -33,7 +35,7 @@ export const getItemById = async (req, res) => {
     try {
       const item = await Item.findById(req.params.id)
         .populate('listedBy', 'name email')
-        .populate('swapRequestedBy', 'name email')
+        .populate('swapRequests.user', 'name email')
         .populate('redeemedBy', 'name email');
   
       if (!item) {
@@ -86,6 +88,7 @@ export const createItem = async (req, res) => {
     });
 
     await newItem.save();
+    io.emit('item:new', newItem);
 
     const user = await User.findById(req.user._id);
     user.points += 10;
@@ -159,14 +162,21 @@ export const requestSwap = async (req, res) => {
       }
   
       // Prevent duplicate requests
-      const alreadyRequested = item.swapRequests.includes(req.user._id);
+      const alreadyRequested = item.swapRequests.some(request => 
+        request.user && request.user.toString() === req.user._id.toString()
+      );
       if (alreadyRequested) {
         return res.status(400).json({ message: 'You have already requested to swap this item' });
       }
   
-      // Add user to swap requests
-      item.swapRequests.push(req.user._id);
+      // Add user to swap requests with proper structure
+      item.swapRequests.push({
+        user: req.user._id,
+        status: 'pending',
+        requestedAt: new Date()
+      });
       await item.save();
+      io.emit('swap:requested', { itemId: item._id, userId: req.user._id });
   
       res.status(200).json({ message: 'Swap request submitted successfully' });
     } catch (error) {
@@ -189,7 +199,12 @@ export const requestSwap = async (req, res) => {
         return res.status(403).json({ message: 'Unauthorized' });
       }
   
-      if (!item.swapRequests.includes(userId)) {
+      // Check if the user has a swap request
+      const hasRequest = item.swapRequests.some(request => 
+        request.user && request.user.toString() === userId
+      );
+      
+      if (!hasRequest) {
         return res.status(400).json({ message: 'No such swap request' });
       }
   
@@ -197,14 +212,18 @@ export const requestSwap = async (req, res) => {
         item.availability = 'swapped';
         item.swappedWith = userId;
         item.swapRequests = []; // Clear all
+        res.status(200).json({ message: 'Swap successful! Item has been swapped.' });
       } else if (decision === 'reject') {
-        item.swapRequests = item.swapRequests.filter(id => id.toString() !== userId);
+        item.swapRequests = item.swapRequests.filter(request => 
+          request.user && request.user.toString() !== userId
+        );
+        res.status(200).json({ message: 'Swap request rejected.' });
       } else {
         return res.status(400).json({ message: 'Invalid decision' });
       }
   
       await item.save();
-      res.status(200).json({ message: `Swap request ${decision}ed successfully`, item });
+      io.emit('swap:decision', { itemId: item._id, userId, decision });
   
     } catch (err) {
       console.error('[SWAP DECISION ERROR]', err);
@@ -234,6 +253,7 @@ export const requestSwap = async (req, res) => {
       item.availability = 'redeemed';
       item.redeemedBy = req.user._id;
       await item.save();
+      io.emit('item:redeemed', { itemId: item._id, userId: req.user._id });
   
       res.status(200).json({ message: 'Item successfully redeemed via points' });
     } catch (error) {
