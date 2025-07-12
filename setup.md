@@ -1,4 +1,4 @@
-# Quick Setup Guide
+git # Quick Setup Guide
 
 ## 🚀 Quick Start
 
@@ -31,12 +31,23 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 - Create free account at cloudinary.com
 - Get credentials from dashboard
 
-### 4. Run the App
+### 4. Run the Application
+
+You need to run both servers. Open **two terminal windows**:
+
+#### Terminal 1 - Backend Server:
 ```bash
 npm run dev
 ```
+Backend runs on: `http://localhost:5000`
 
-Server runs on: `http://localhost:5000`
+#### Terminal 2 - Frontend Server:
+```bash
+npm run frontend
+```
+Frontend runs on: `http://localhost:8000`
+
+**Access your app at**: `http://localhost:8000`
 
 ## 📝 Environment Variables Explained
 

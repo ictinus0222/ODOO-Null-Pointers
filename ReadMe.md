@@ -89,26 +89,59 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 ## 🏃‍♂️ Running the Application
 
-### Development Mode (with auto-restart)
+### Option 1: Run Both Servers (Recommended)
 
+You need to run both the backend and frontend servers. Open **two terminal windows**:
+
+#### Terminal 1 - Backend Server:
+```bash
+npm run dev
+```
+Backend server runs on `http://localhost:5000`
+
+#### Terminal 2 - Frontend Server:
+```bash
+npm run frontend
+```
+Frontend server runs on `http://localhost:8000`
+
+### Option 2: Development Mode (Auto-restart)
+
+#### Terminal 1 - Backend:
 ```bash
 npm run dev
 ```
 
-### Production Mode
+#### Terminal 2 - Frontend:
+```bash
+npm run frontend-dev
+```
 
+### Option 3: Production Mode
+
+#### Terminal 1 - Backend:
 ```bash
 npm start
 ```
 
-The server will start on `http://localhost:5000`
+#### Terminal 2 - Frontend:
+```bash
+npm run frontend
+```
+
+## 🌐 Accessing the Application
+
+- **Main Application**: `http://localhost:8000`
+- **Test Page**: `http://localhost:8000/test`
+- **Backend API**: `http://localhost:5000`
 
 ## 📁 Project Structure
 
 ```
 Team-2335/
 ├── app.js                 # Express app configuration
-├── server.js              # Server entry point
+├── server.js              # Backend server entry point
+├── frontend-server.js     # Frontend server entry point
 ├── package.json           # Dependencies and scripts
 ├── .env                   # Environment variables (create this)
 ├── controllers/           # Route controllers
