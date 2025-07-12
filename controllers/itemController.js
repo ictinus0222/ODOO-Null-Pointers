@@ -30,17 +30,23 @@ export const getAllItems = async (req, res) => {
 // @desc   Get product by ID
 // @route  GET /api/products/:id
 export const getItemById = async (req, res) => {
-  try {
-    const item = await Item.findById(req.params.id).populate('listedBy', 'name email');
-
-    if (!item) return res.status(404).json({ message: 'Product not found' });
-
-    res.status(200).json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch product' });
-  }
-};
-
+    try {
+      const item = await Item.findById(req.params.id)
+        .populate('listedBy', 'name email')
+        .populate('swapRequestedBy', 'name email')
+        .populate('redeemedBy', 'name email');
+  
+      if (!item) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+  
+      res.status(200).json(item);
+    } catch (error) {
+      console.error('[GET ITEM BY ID ERROR]', error);  // ✅ Add this
+      res.status(500).json({ message: 'Failed to fetch product' });
+    }
+  };
+  
 // ✅ Controller: Create a new item listing
 // @route  POST /api/items
 export const createItem = async (req, res) => {
@@ -80,7 +86,10 @@ export const createItem = async (req, res) => {
     });
 
     await newItem.save();
-    res.status(201).json({ message: 'Item submitted for review', item: newItem });
+
+    const user = await User.findById(req.user._id);
+    user.points += 10;
+    await user.save();    res.status(201).json({ message: 'Item submitted for review', item: newItem });
 
   } catch (error) {
     console.error('[CREATE ITEM ERROR]', error);
@@ -134,3 +143,102 @@ export const deleteItem = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete product' });
   }
 };
+
+// @desc    Request to swap an item
+// @route   POST /api/items/:id/request-swap
+// @access  Private
+export const requestSwap = async (req, res) => {
+    try {
+      const item = await Item.findById(req.params.id);
+  
+      if (!item) return res.status(404).json({ message: 'Item not found' });
+  
+      // Prevent users from requesting their own item
+      if (item.listedBy.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: 'You cannot request your own item' });
+      }
+  
+      // Prevent duplicate requests
+      const alreadyRequested = item.swapRequests.includes(req.user._id);
+      if (alreadyRequested) {
+        return res.status(400).json({ message: 'You have already requested to swap this item' });
+      }
+  
+      // Add user to swap requests
+      item.swapRequests.push(req.user._id);
+      await item.save();
+  
+      res.status(200).json({ message: 'Swap request submitted successfully' });
+    } catch (error) {
+      console.error('[SWAP REQUEST ERROR]', error);
+      res.status(500).json({ message: 'Failed to request swap' });
+    }
+  };
+  
+  export const handleSwapDecision = async (req, res) => {
+    const { itemId } = req.params;
+    const { userId, decision } = req.body;
+  
+    try {
+      const item = await Item.findById(itemId);
+  
+      if (!item) return res.status(404).json({ message: 'Item not found' });
+  
+      // Only the owner can take action
+      if (item.listedBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+  
+      if (!item.swapRequests.includes(userId)) {
+        return res.status(400).json({ message: 'No such swap request' });
+      }
+  
+      if (decision === 'accept') {
+        item.availability = 'swapped';
+        item.swappedWith = userId;
+        item.swapRequests = []; // Clear all
+      } else if (decision === 'reject') {
+        item.swapRequests = item.swapRequests.filter(id => id.toString() !== userId);
+      } else {
+        return res.status(400).json({ message: 'Invalid decision' });
+      }
+  
+      await item.save();
+      res.status(200).json({ message: `Swap request ${decision}ed successfully`, item });
+  
+    } catch (err) {
+      console.error('[SWAP DECISION ERROR]', err);
+      res.status(500).json({ message: 'Server error while handling swap decision' });
+    }
+  };
+  
+  export const redeemItem = async (req, res) => {
+    try {
+      const item = await Item.findById(req.params.itemId);
+      const user = await User.findById(req.user._id);
+  
+      if (!item) return res.status(404).json({ message: 'Item not found' });
+      if (item.listedBy.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: 'Cannot redeem your own item' });
+      }
+      if (item.availability !== 'available') {
+        return res.status(400).json({ message: 'Item not available' });
+      }
+      if (user.points < 30) {
+        return res.status(400).json({ message: 'Not enough points' });
+      }
+  
+      user.points -= 30;
+      await user.save();
+  
+      item.availability = 'redeemed';
+      item.redeemedBy = req.user._id;
+      await item.save();
+  
+      res.status(200).json({ message: 'Item successfully redeemed via points' });
+    } catch (error) {
+      console.error('[REDEEM ERROR]', error);
+      res.status(500).json({ message: 'Server error during redemption' });
+    }
+  };
+  
